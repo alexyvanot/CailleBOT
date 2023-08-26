@@ -1,6 +1,8 @@
 package com.nyuway.caillebot;
 
 import com.nyuway.caillebot.commands.CommandManager;
+import com.nyuway.caillebot.commands.utilities.Ping;
+import com.nyuway.caillebot.commands.music.*;
 import com.nyuway.caillebot.listeners.EventListener;
 import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -40,13 +42,26 @@ public class Bot {
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(CacheFlag.ONLINE_STATUS);
 
+        // build
         shardManager = builder.build();
 
         // Listeners
-        shardManager.addEventListener(
-                new EventListener(),
-                new CommandManager()
-        );
+        shardManager.addEventListener(new EventListener());
+
+        // Commands
+        CommandManager commandManager = new CommandManager();
+        commandManager.add(new Ping());
+        commandManager.add(new Play());
+        commandManager.add(new Stop());
+        commandManager.add(new NowPlaying());
+        commandManager.add(new Join());
+        commandManager.add(new Leave());
+        commandManager.add(new Skip());
+        commandManager.add(new Pause());
+        commandManager.add(new Resume());
+        commandManager.add(new Repeat());
+
+        shardManager.addEventListener(commandManager);
 
     }
 
