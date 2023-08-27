@@ -60,6 +60,7 @@ public class Bot {
         commandManager.add(new Pause());
         commandManager.add(new Resume());
         commandManager.add(new Repeat());
+        commandManager.add(new Queue());
 
         shardManager.addEventListener(commandManager);
 

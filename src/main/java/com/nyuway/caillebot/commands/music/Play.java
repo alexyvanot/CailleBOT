@@ -1,16 +1,25 @@
 package com.nyuway.caillebot.commands.music;
 
 import com.nyuway.caillebot.ICommand;
+import com.nyuway.caillebot.lavaplayer.GuildMusicManager;
 import com.nyuway.caillebot.lavaplayer.PlayerManager;
+import com.nyuway.caillebot.utils.TimeFormatter;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackState;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 
 public class Play implements ICommand {
     @Override
@@ -26,7 +35,7 @@ public class Play implements ICommand {
     @Override
     public List<OptionData> getOptions() {
         List<OptionData> options = new ArrayList<>();
-        options.add(new OptionData(OptionType.STRING, "url", "The url of the song to play").setRequired(true));
+        options.add(new OptionData(OptionType.STRING, "query", "The name/url of the song to play").setRequired(true));
         return options;
     }
 
@@ -50,10 +59,60 @@ public class Play implements ICommand {
             event.getGuild().getAudioManager().openAudioConnection(memberVoiceState.getChannel());
         }
 
-        PlayerManager playerManager = PlayerManager.getInstance();
-        playerManager.play(event.getGuild(), Objects.requireNonNull(event.getOption("url")).getAsString());
+        String query = Objects.requireNonNull(event.getOption("query")).getAsString();
 
-        event.reply("La musique a été ajoutée à la file d'attente.").queue();
+        if(!query.startsWith("http")) {
+            try {
+                new URI(query);
+            } catch (URISyntaxException e) {
+                query = "ytsearch:" + query;
+            }
+        }
+
+        PlayerManager playerManager = PlayerManager.getInstance();
+        GuildMusicManager guildMusicManager = playerManager.getGuildMusicManager(event.getGuild());
+        playerManager.play(event.getGuild(), query); // added
+
+        AudioTrack track = waitForTrackToBeQueued(guildMusicManager);
+
+        if (track != null) {
+            AudioTrackInfo info = track.getInfo();
+
+            EmbedBuilder embed = new EmbedBuilder();
+            embed.setTitle("Ajouté à la file d'attente");
+            embed.setDescription("[" + info.title + "](" + info.uri + ")");
+            embed.appendDescription("\nAuteur : " + info.author);
+            embed.appendDescription("\nURL : " + info.uri);
+            embed.setThumbnail("https://img.youtube.com/vi/" + info.identifier + "/maxresdefault.jpg");
+            embed.setFooter("Durée : " + TimeFormatter.formatMs(info.length));
+
+            event.replyEmbeds(embed.build()).queue();
+        }
 
     }
+
+    private AudioTrack waitForTrackToBeQueued(GuildMusicManager guildMusicManager) {
+        int attempts = 0;
+        while (attempts < 10) {
+
+            BlockingQueue<AudioTrack> queue = guildMusicManager.getTrackScheduler().getQueue();
+            AudioTrack currentTrack = guildMusicManager.getTrackScheduler().getPlayer().getPlayingTrack();
+
+            if (!queue.isEmpty()) {
+                return queue.peek();
+            } else if (currentTrack != null && currentTrack.getState() == AudioTrackState.LOADING) {
+                return currentTrack;
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            attempts++;
+        }
+        return null;
+    }
+
 }

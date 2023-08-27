@@ -50,9 +50,7 @@ public class PlayerManager {
 
             @Override
             public void playlistLoaded(AudioPlaylist playlist) {
-                for(AudioTrack track : playlist.getTracks()) {
-                    guildMusicManager.getTrackScheduler().queue(track);
-                }
+                guildMusicManager.getTrackScheduler().queue(playlist.getTracks().get(0));
             }
 
             @Override
