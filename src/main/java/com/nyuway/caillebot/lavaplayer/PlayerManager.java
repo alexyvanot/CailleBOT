@@ -9,6 +9,7 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.entities.Guild;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class PlayerManager {
         return INSTANCE;
     }
 
-    public GuildMusicManager getGuildMusicManager(Guild guild) {
+    public GuildMusicManager getGuildMusicManager(@NotNull Guild guild) {
         return guildMusicManagers.computeIfAbsent(guild.getIdLong(), (guildId) -> {
             GuildMusicManager musicManager = new GuildMusicManager(audioPlayerManager);
             guild.getAudioManager().setSendingHandler(musicManager.getAudioForwarder());

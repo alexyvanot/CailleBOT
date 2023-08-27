@@ -3,6 +3,7 @@ package com.nyuway.caillebot.commands.utilities;
 import com.nyuway.caillebot.ICommand;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class Ping implements ICommand {
     }
 
     @Override
-    public void execute(SlashCommandInteractionEvent event) {
+    public void execute(@NotNull SlashCommandInteractionEvent event) {
         int ms = (int) event.getHook().getJDA().getGatewayPing();
         event.reply("Pong! (" + ms + "ms)").setEphemeral(true).queue();
     }
