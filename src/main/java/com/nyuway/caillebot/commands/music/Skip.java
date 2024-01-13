@@ -29,6 +29,7 @@ public class Skip implements ICommand {
     @Override
     public void execute(@NotNull SlashCommandInteractionEvent event) {
         Member member = event.getMember();
+        GuildMusicManager guildMusicManager = PlayerManager.getInstance().getGuildMusicManager(event.getGuild());
 
         if (!member.getVoiceState().inAudioChannel()) {
             event.reply("Vous devez être connecté dans un salon vocal pour exécuter cette commande.").setEphemeral(true).queue();
@@ -46,8 +47,6 @@ public class Skip implements ICommand {
             event.reply("Vous devez être connecté dans le même salon vocal que le bot pour exécuter cette commande.").setEphemeral(true).queue();
             return;
         }
-
-        GuildMusicManager guildMusicManager = PlayerManager.getInstance().getGuildMusicManager(event.getGuild());
 
         if (guildMusicManager.getTrackScheduler().getQueue().isEmpty()) {
             event.reply("Il n'y a pas de musique dans la file d'attente.").setEphemeral(true).queue();

@@ -3,6 +3,7 @@ package com.nyuway.caillebot.commands.music;
 import com.nyuway.caillebot.ICommand;
 import com.nyuway.caillebot.lavaplayer.GuildMusicManager;
 import com.nyuway.caillebot.lavaplayer.PlayerManager;
+import com.nyuway.caillebot.lavaplayer.TrackScheduler;
 import com.nyuway.caillebot.utils.TimeFormatter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
@@ -49,7 +50,7 @@ public class Play implements ICommand {
             memberVoiceState = member.getVoiceState();
         }
 
-        if(memberVoiceState == null || !memberVoiceState.inAudioChannel()) {
+        if (memberVoiceState == null || !memberVoiceState.inAudioChannel()) {
             event.reply("Vous devez être connecté dans un salon vocal pour exécuter cette commande.").setEphemeral(true).queue();
             return;
         }
@@ -57,13 +58,13 @@ public class Play implements ICommand {
         Member selfMember = Objects.requireNonNull(event.getGuild()).getSelfMember();
         GuildVoiceState selfVoiceState = selfMember.getVoiceState();
 
-        if(!Objects.requireNonNull(selfVoiceState).inAudioChannel()) {
+        if (!Objects.requireNonNull(selfVoiceState).inAudioChannel()) {
             event.getGuild().getAudioManager().openAudioConnection(memberVoiceState.getChannel());
         }
 
         String query = Objects.requireNonNull(event.getOption("query")).getAsString();
 
-        if(!query.startsWith("http")) {
+        if (!query.startsWith("http")) {
             try {
                 new URI(query);
             } catch (URISyntaxException e) {
@@ -75,26 +76,28 @@ public class Play implements ICommand {
         GuildMusicManager guildMusicManager = playerManager.getGuildMusicManager(event.getGuild());
         playerManager.play(event.getGuild(), query); // added
 
-        AudioTrack track = waitForTrackToBeQueued(guildMusicManager);
+        AudioTrack track = guildMusicManager.getTrackScheduler().getQueue().isEmpty() ? waitForTrackToBeQueued(guildMusicManager) : TrackScheduler.getLastElement(guildMusicManager.getTrackScheduler().getQueue());
 
-        if (track != null) {
-            AudioTrackInfo info = track.getInfo();
+        System.out.println(event.getGuild().getName() + " » Playing: " + track.getInfo().title + " by " + track.getInfo().author + " (" + track.getInfo().uri + ")");
 
-            EmbedBuilder embed = new EmbedBuilder();
-            embed.setTitle("Ajouté à la file d'attente");
-            embed.setDescription("[" + info.title + "](" + info.uri + ")");
-            embed.appendDescription("\nAuteur : " + info.author);
-            embed.appendDescription("\nURL : " + info.uri);
-            embed.setThumbnail("https://img.youtube.com/vi/" + info.identifier + "/maxresdefault.jpg");
-            embed.setFooter("Durée : " + TimeFormatter.formatMs(info.length));
+        AudioTrackInfo info = track.getInfo();
 
-            event.replyEmbeds(embed.build()).queue();
-        }
+        EmbedBuilder embed = new EmbedBuilder();
+        embed.setTitle("Ajouté à la file d'attente");
+        embed.setDescription("[" + info.title + "](" + info.uri + ")");
+        embed.appendDescription("\nAuteur : " + info.author);
+        embed.appendDescription("\nURL : " + info.uri);
+        embed.setThumbnail("https://img.youtube.com/vi/" + info.identifier + "/maxresdefault.jpg");
+        embed.setFooter("Durée : " + TimeFormatter.formatMs(info.length));
+
+        event.replyEmbeds(embed.build()).queue();
 
     }
 
     @Nullable
     private AudioTrack waitForTrackToBeQueued(GuildMusicManager guildMusicManager) {
+        // run that in a separate thread
+
         int attempts = 0;
         while (attempts < 10) {
 
@@ -102,7 +105,7 @@ public class Play implements ICommand {
             AudioTrack currentTrack = guildMusicManager.getTrackScheduler().getPlayer().getPlayingTrack();
 
             if (!queue.isEmpty()) {
-                return queue.peek();
+                return TrackScheduler.getLastElement(queue);
             } else if (currentTrack != null && currentTrack.getState() == AudioTrackState.LOADING) {
                 return currentTrack;
             }
@@ -117,5 +120,6 @@ public class Play implements ICommand {
         }
         return null;
     }
+
 
 }

@@ -12,6 +12,7 @@ public class TrackScheduler extends AudioEventAdapter {
 
     private final AudioPlayer player;
     private BlockingQueue<AudioTrack> queue = new LinkedBlockingQueue<>();
+    private  AudioTrack lastAddedTrack;
 
     private boolean repeatMode = false;
 
@@ -32,6 +33,7 @@ public class TrackScheduler extends AudioEventAdapter {
         if(!player.startTrack(track, true)) {
             queue.offer(track);
         }
+        this.setLastAddedTrack(track);
     }
 
     public AudioPlayer getPlayer() {
@@ -48,5 +50,30 @@ public class TrackScheduler extends AudioEventAdapter {
 
     public void setRepeatMode(boolean b) {
         repeatMode = b;
+    }
+
+    public static <T> T getLastElement(BlockingQueue<T> queue) {
+        if (queue == null || queue.isEmpty()) {
+            throw new IllegalArgumentException("La queue est vide");
+        }
+
+        T lastElement = null;
+        for (T element : queue) {
+            lastElement = element;
+        }
+
+        return lastElement;
+    }
+
+    public AudioTrack getLastAddedTrack() {
+        return lastAddedTrack;
+    }
+
+    public AudioTrack getLastTrack() {
+        return queue.peek();
+    }
+
+    public void setLastAddedTrack(AudioTrack lastAddedTrack) {
+        this.lastAddedTrack = lastAddedTrack;
     }
 }
