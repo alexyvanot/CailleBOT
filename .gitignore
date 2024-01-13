@@ -40,3 +40,6 @@ build/
 
 ### .env ###
 .env
+
+### Maven ###
+./dependency-reduced-pom.xml
